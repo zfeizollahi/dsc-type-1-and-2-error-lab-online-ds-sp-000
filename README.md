@@ -51,6 +51,17 @@ pop.dtype
 sns.distplot(pop)
 ```
 
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7fe4a887ea90>
+
+
+
+
+![png](index_files/index_3_1.png)
+
+
 Now take two samples from this population and comment on the difference between their means and standard deviations. How would you ensure the independence between the elements of these samples? 
 
 
@@ -62,12 +73,32 @@ print ("Sample 1 Summary")
 stats.describe(sample1)
 ```
 
+    Sample 1 Summary
+
+
+
+
+
+    DescribeResult(nobs=100, minmax=(39.88888856250871, 142.07786977216958), mean=104.32071125084998, variance=375.3395434270732, skewness=-0.2590703626299565, kurtosis=0.20150824537479517)
+
+
+
 
 ```python
 sample2 = np.random.choice(pop,100,replace=True)
 print ("Sample 2 Summary")
 stats.describe(sample2)
 ```
+
+    Sample 2 Summary
+
+
+
+
+
+    DescribeResult(nobs=100, minmax=(61.355386811312734, 152.79654278073497), mean=102.20943547829333, variance=425.4871071250722, skewness=0.1600651339675395, kurtosis=-0.4601556043662196)
+
+
 
 You can see that if you took two samples from this population, the difference between the mean of samples 1 and 2 is very small (this can be tried repeatedly). You must sample with replacement in order to ensure the independence assumption between elements of the sample. 
 
@@ -82,6 +113,13 @@ stats.ttest_ind(sample1, sample2)
 ```
 
 
+
+
+    Ttest_indResult(statistic=0.7460633488387429, pvalue=0.45651399158079764)
+
+
+
+
 ```python
 plt.figure("Test Samples")
 sns.distplot(sample1, label='Sample1') 
@@ -90,6 +128,10 @@ plt.legend()
 plt.show()
 
 ```
+
+
+![png](index_files/index_9_0.png)
+
 
 ## Simulating Type I and II errors
 
@@ -145,7 +187,20 @@ def type_1_error(population, num_tests, alpha_set):
     sig_tests : DataFrame
         A dataframe containing the columns 'type_1_error', 'p_value', and 'alpha'
     """
-    pass
+    sig_tests = []
+    for alpha in alpha_set:
+        for i in range(num_tests):
+            sample1 = np.random.choice(population, 100, replace=True)
+            sample2 = np.random.choice(population, 100, replace=True)
+
+            t = stats.ttest_ind(sample1, sample2)
+            if t[1] < alpha:
+                type_1_error = True
+            else:
+                type_1_error = False
+            sig_tests.append([alpha, type_1_error, t[1]])
+    sig_tests_df = pd.DataFrame(sig_tests, columns=['alpha', 'type_1_error', 'p_value'])
+    return sig_tests_df
 # Example dataframe for 1 test below
 ```
 
@@ -155,14 +210,86 @@ What's the relationship between alpha and type I errors?
 
 
 ```python
+sig_tests_1.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>alpha</th>
+      <th>type_1_error</th>
+      <th>p_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.401972</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.253264</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.898521</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.510948</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0.001</td>
+      <td>True</td>
+      <td>0.003523</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
 # group type I error by values of alpha
-pop = None
-num_tests = None
-alpha_set = None
+pop = np.random.normal(100, 20, 1000)
+num_tests = 1000
+alpha_set = [0.001, 0.01, 0.05, 0.1, 0.2, 0.5]
 sig_tests_1 = type_1_error(pop, num_tests, alpha_set)
 group_error = sig_tests_1.groupby('alpha')['type_1_error'].sum()
-group_error.plot.bar(title = "TYPE I ERROR - FALSE POSITIVES")
+group_error.plot.bar(title = "TYPE I ERROR - FALSE POSITIVES");
 ```
+
+
+![png](index_files/index_14_0.png)
+
 
 The grouped data clearly shows that as value of alpha is increases from .001 to .5, the probability of type I errors also increases. 
 
@@ -218,7 +345,20 @@ def type_2_error(population, population_2, num_tests, alpha_set):
     sig_tests : DataFrame
         A dataframe containing the columns 'type_2_error', 'p_value', and 'alpha'
     """
-    pass
+    sig_tests = []
+    for alpha in alpha_set:
+        for i in range(num_tests):
+            sample1 = np.random.choice(population, 100, replace=True)
+            sample2 = np.random.choice(population, 100, replace=True)
+
+            t = stats.ttest_ind(sample1, sample2)
+            if t[1] > alpha:
+                type_2_error = False
+            else:
+                type_2_error = True
+            sig_tests.append([alpha, type_2_error, t[1]])
+    sig_tests_df = pd.DataFrame(sig_tests, columns=['alpha', 'type_2_error', 'p_value'])
+    return sig_tests_df
 # Example dataframe for 1 test below
 ```
 
@@ -226,15 +366,94 @@ Now, create a visualization that will represent each one of these decisions. Wha
 
 
 ```python
-pop = None
-pop2 = None
-num_tests = None
-alpha_set = None
+sig_tests_2.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>alpha</th>
+      <th>type_2_error</th>
+      <th>p_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>0.001</td>
+      <td>True</td>
+      <td>0.000609</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.721290</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.302374</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.750669</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0.001</td>
+      <td>False</td>
+      <td>0.494827</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+pop = np.random.normal(100, 20, 1000)
+pop2 = np.random.normal(110, 20, 1000)
+num_tests = 1000
+alpha_set = [0.001, 0.01, 0.05, 0.1, 0.2, 0.5]
 sig_tests_2 = type_2_error(pop,pop2,num_tests,alpha_set)
 
 group_error2 = sig_tests_2.groupby('alpha')['type_2_error'].sum()
 group_error2.plot.bar(title = "Type II ERROR - FALSE NEGATIVES")
 ```
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7fe4a8b5d160>
+
+
+
+
+![png](index_files/index_19_1.png)
+
 
 The grouped data clearly shows that as value of alpha is increased from .001 to .5, the probability of type II errors decreases. 
 
